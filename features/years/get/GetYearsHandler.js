@@ -1,3 +1,4 @@
+import Streams from "../../../models/Streams.js";
 import Years from "../../../models/Years.js";
 import Jwt from "../../../utils/Jwt.js";
 export default async function GetYearsAsync(req, res) {
@@ -9,7 +10,13 @@ export default async function GetYearsAsync(req, res) {
       });
     }
 
-    const year = await Years.findAll();
+    const year = await Years.findAll({
+      include: [
+        {
+          model: Streams,
+        }
+      ]
+    });
 
     return res.status(200).json({
       data: year,

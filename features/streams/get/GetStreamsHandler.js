@@ -9,7 +9,7 @@ export default async function GetStreamsAsync(req, res) {
       });
     }
     const streams = await Streams.findAll();
-    return res.status(201).json({
+    return res.status(200).json({
       data: streams,
     });
   } catch (error) {

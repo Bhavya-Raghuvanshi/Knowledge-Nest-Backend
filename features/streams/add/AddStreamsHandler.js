@@ -11,6 +11,13 @@ export default async function AddStreamAsync(req, res) {
     }
 
     const stream = await StreamSchema.validateAsync(req.body);
+    const existingStream = await Streams.findOne({ where: { Name: stream.Name } });
+
+    if (existingStream) {
+      return res.status(409).json({
+        message: "Stream with this name already exists",
+      });
+    }
 
     const createdStream = await Streams.create(stream);
 

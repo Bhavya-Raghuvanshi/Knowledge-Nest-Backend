@@ -7,6 +7,7 @@ import Years from "../../../models/Years.js";
 import Streams from "../../../models/Streams.js";
 import Semesters from "../../../models/Semesters.js";
 import Subjects from "../../../models/Subjects.js";
+import UserProfile from "../../../models/UserProfile.js";
 
 export default async function getUsersByUserRole(req, res) {
   try {
@@ -35,79 +36,104 @@ export default async function getUsersByUserRole(req, res) {
     }
 
     const userPromises = usersFromUserRole.map(async (user) => {
-      const profile = await user.getUserProfile();
-
-      const userData = {
-        id: user.dataValues.id,
-        UserRole: userRoleName,
-        Name: profile.dataValues.Name,
-        Email: user.dataValues.Email,
-        Gender: profile.dataValues.Gender,
-        Contact: profile.dataValues.Contact,
-        Address: profile.dataValues.Address,
-        ImageName: profile.dataValues.ImageName,
-        Password: user.dataValues.Password,
-        IsActivate: user.dataValues.IsActivate,
-      };
-
-      if (userRoleName == "Student" || userRoleName == "student") {
-        const studentData = await StudentData.findOne({
-          where: { StudentId: user.dataValues.id },
+      try {
+        const profile = await UserProfile.findOne({
+          where: { UserId: user.dataValues.id },
         });
-
-        userData["EnrollmentNumber"] = studentData.EnrollmentNumber;
-
-        let data = await Classes.findByPk(studentData.dataValues.ClassId, {
-          include: [
-            {
-              model: Years,
-              attributes: ["id", "name"],
-              include: [
-                {
-                  model: Streams,
-                  attributes: ["id", "name"],
-                },
-              ],
-            },
-          ],
-        });
-
-        userData["Class"] = {
-          Id: data.dataValues.id,
-          Division: data.dataValues.Division,
+        if (!profile) {
+          throw new Error("UserProfile not found");
+        }
+        const userData = {
+          id: user.dataValues.id,
+          UserRole: userRoleName,
+          Name: profile.dataValues.Name,
+          Email: user.dataValues.Email,
+          Gender: profile.dataValues.Gender,
+          Contact: profile.dataValues.Contact,
+          Address: profile.dataValues.Address,
+          ImageName: profile.dataValues.ImageName,
+          Password: user.dataValues.Password,
+          IsActivate: user.dataValues.IsActivate,
         };
+        if (userRoleName == "Student" || userRoleName == "student") {
+          const studentData = await StudentData.findOne({
+            where: { StudentId: user.dataValues.id },
+          });
 
-        userData["Year"] = {
-          Id: data.dataValues.Year.dataValues.id,
-          Name: data.dataValues.Year.dataValues.name,
-        };
+          if (!studentData) {
+            throw new Error("StudentData not found");
+          }
 
-        userData["Stream"] = data.dataValues.Year.Stream.dataValues;
+          userData["EnrollmentNumber"] = studentData.EnrollmentNumber;
 
-        data = await Semesters.findByPk(studentData.SemesterId);
-        userData["Semester"] = {
-          Id: data.dataValues.id,
-          Semester: data.dataValues.Semester,
-        };
-      } else if (userRoleName == "Faculty" || userRoleName == "faculty") {
-        const assignedSubjects = await AssignedSubjects.findAll({
-          where: { FacultyId: user.dataValues.id },
+          let data = await Classes.findByPk(studentData.dataValues.ClassId, {
+            include: [
+              {
+                model: Years,
+                attributes: ["id", "name"],
+                include: [
+                  {
+                    model: Streams,
+                    attributes: ["id", "name"],
+                  },
+                ],
+              },
+            ],
+          });
+
+          if (!data) {
+            throw new Error("Class data not found");
+          }
+
+          userData["Class"] = {
+            Id: data.dataValues.id,
+            Division: data.dataValues.Division,
+          };
+
+          userData["Year"] = {
+            Id: data.dataValues.Year.dataValues.id,
+            Name: data.dataValues.Year.dataValues.name,
+          };
+
+          userData["Stream"] = data.dataValues.Year.Stream.dataValues;
+
+          data = await Semesters.findByPk(studentData.SemesterId);
+          if (!data) {
+            throw new Error("Semester data not found");
+          }
+          userData["Semester"] = {
+            Id: data.dataValues.id,
+            Semester: data.dataValues.Semester,
+          };
+        }
+        if (userRoleName == "Faculty" || userRoleName == "faculty") {
+          const assignedSubjects = await AssignedSubjects.findAll({
+            where: { FacultyId: user.dataValues.id },
+          });
+          if (!assignedSubjects) {
+            throw new Error("AssignedSubjects not found");
+          }
+          const subjectPromises = assignedSubjects.map(async (subject) => {
+            const subjectData = await Subjects.findByPk(
+              subject.dataValues.SubjectId
+            );
+            if (!subjectData) {
+              throw new Error("Subject data not found");
+            }
+            return subjectData.dataValues.Name;
+          });
+
+          userData["AssignedSubjects"] = await Promise.all(subjectPromises);
+        }
+        return userData;
+      } catch (error) {
+        return res.status(400).json({
+          message: error.message,
         });
-
-        const subjectPromises = assignedSubjects.map(async (subject) => {
-          const subjectData = await Subjects.findByPk(
-            subject.dataValues.SubjectId
-          );
-          return subjectData.dataValues.Name;
-        });
-
-        userData["AssignedSubjects"] = await Promise.all(subjectPromises);
       }
-
-      return userData;
     });
 
-    const users = await Promise.all(userPromises);
+    const users = (await Promise.all(userPromises)).filter((user) => user !== null);
 
     return res.status(200).json({
       data: users,

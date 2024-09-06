@@ -1,4 +1,6 @@
 import Semesters from "../../../models/Semesters.js";
+import Streams from "../../../models/Streams.js";
+import Years from "../../../models/Years.js";
 import Jwt from "../../../utils/Jwt.js";
 
 export default async function GetSemestersAsync(req, res) {
@@ -10,7 +12,18 @@ export default async function GetSemestersAsync(req, res) {
       });
     }
 
-    const semester = await Semesters.findAll();
+    const semester = await Semesters.findAll({
+      include: [
+        {
+          model: Years,
+          include: [
+            {
+              model: Streams,
+            }
+          ]
+        }
+      ]
+    });
 
     return res.status(200).json({
       data: semester,

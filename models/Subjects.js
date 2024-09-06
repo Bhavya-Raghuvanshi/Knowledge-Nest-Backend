@@ -8,16 +8,16 @@ const Subjects = connection.define("Subjects", {
   Name: {
     type: DataTypes.STRING(50),
     allowNull: false,
-    unique: true,
-    validate: {
-      isUnique: async function (value) {
-        const existingSubject = await Subjects.findOne({ where: { Name: value } });
+    // unique: true,
+    // validate: {
+    //   isUnique: async function (value) {
+    //     const existingSubject = await Subjects.findOne({ where: { Name: value } });
 
-        if (existingSubject) {
-          throw new Error('Subject name must be unique');
-        }
-      },
-    },
+    //     if (existingSubject) {
+    //       throw new Error('Subject name must be unique');
+    //     }
+    //   },
+    // },
   },
   SemesterId: {
     type: DataTypes.INTEGER,

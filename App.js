@@ -26,6 +26,7 @@ import quizeSubmissionRecordRouter from "./routes/QuizeSubmissionRecordsRoutes.j
 import discussionRouter from "./routes/DiscussionRoutes.js";
 import discussionRecordsRouter from "./routes/DiscussionRecordsRoutes.js";
 import assignmentMarksRouter from "./routes/AssignmentMarksRoutes.js";
+import userProfileRoute from "./routes/UserProfileRoutes.js";
 import path from "path";
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -44,6 +45,7 @@ app.use("/knowledgenest/streams", streamRouter);
 app.use("/knowledgenest/years", yearRouter);
 app.use("/knowledgenest/semesters", semesterRouter);
 app.use("/knowledgenest/users", usersRouter);
+app.use("/knowledgenest/user-profile", userProfileRoute);
 app.use("/knowledgenest/subjects", subjectRouter);
 app.use("/knowledgenest/assigned-subjects", assignedSubjectRouter);
 app.use("/knowledgenest/classes", classes);
